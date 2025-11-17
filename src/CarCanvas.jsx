@@ -227,7 +227,7 @@ function CarModel({ onSeatRequest, currentSeat, headLightsOn, rearLightsOn, carR
 }
 
 // =========================================================================
-// CAMERA RIG COMPONENT (Remains the same)
+// CAMERA RIG COMPONENT (Updated for Touch/Mobile Support)
 // =========================================================================
 function CameraRig({ seat, controls }) {
   const { camera, gl } = useThree();
@@ -243,6 +243,8 @@ function CameraRig({ seat, controls }) {
   const yaw = useRef(0);
   const pitch = useRef(0);
   const PITCH_LIMIT = Math.PI / 4;
+  // Ref to store the previous touch position for calculating delta
+  const previousTouch = useRef({ x: 0, y: 0 }); 
 
   useEffect(() => {
     if (!seat) {
@@ -252,17 +254,68 @@ function CameraRig({ seat, controls }) {
   }, [seat]);
   
   useEffect(() => {
+    if (!seat) return; // Only apply custom movement when seated
+
     function onMove(e) {
       if (!seat) return;
 
-      yaw.current -= e.movementX * 0.002;
-      pitch.current -= e.movementY * 0.002;
+      let movementX = 0;
+      let movementY = 0;
+      
+      // Handle Mouse Movement (Desktop)
+      if (e.movementX !== undefined) {
+        movementX = e.movementX;
+        movementY = e.movementY;
+      } 
+      // Handle Touch Movement (Mobile/Tablet)
+      else if (e.touches && e.touches.length > 0) {
+        const touch = e.touches[0];
+        
+        // Calculate the difference from the last known touch position
+        if (previousTouch.current.x !== 0 || previousTouch.current.y !== 0) {
+          movementX = touch.clientX - previousTouch.current.x;
+          movementY = touch.clientY - previousTouch.current.y;
+        }
+
+        // Store the current touch position for the next move event
+        previousTouch.current.x = touch.clientX;
+        previousTouch.current.y = touch.clientY;
+      } else {
+        return; // No relevant movement data
+      }
+      
+      yaw.current -= movementX * 0.002;
+      pitch.current -= movementY * 0.002;
 
       pitch.current = Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch.current));
     }
+    
+    function onTouchStart(e) {
+      if (!seat) return;
+      if (e.touches && e.touches.length > 0) {
+        previousTouch.current.x = e.touches[0].clientX;
+        previousTouch.current.y = e.touches[0].clientY;
+      }
+    }
 
+    function onTouchEnd() {
+      // Reset previous touch position when touch ends
+      previousTouch.current = { x: 0, y: 0 }; 
+    }
+
+    // Add mouse and touch event listeners
     gl.domElement.addEventListener("mousemove", onMove);
-    return () => gl.domElement.removeEventListener("mousemove", onMove);
+    gl.domElement.addEventListener("touchstart", onTouchStart);
+    gl.domElement.addEventListener("touchmove", onMove);
+    gl.domElement.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      // Clean up all event listeners
+      gl.domElement.removeEventListener("mousemove", onMove);
+      gl.domElement.removeEventListener("touchstart", onTouchStart);
+      gl.domElement.removeEventListener("touchmove", onMove);
+      gl.domElement.removeEventListener("touchend", onTouchEnd);
+    };
   }, [seat, gl.domElement]);
 
   useFrame(() => {
@@ -272,7 +325,7 @@ function CameraRig({ seat, controls }) {
       controls.current.enabled = true;
       return; 
     }
-
+    // ... (rest of useFrame logic remains the same)
     controls.current.enabled = false;
     const target = seatPositions[seat];
 
