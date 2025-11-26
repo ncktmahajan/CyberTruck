@@ -1,22 +1,38 @@
+// CarCanvas.js
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from "three";
+
 import CameraRig from "./CameraRig";
 import CarModel from "./CarModel";
 import Ground from "./Ground";
+
+// =========================================
+// Easing (Cubic) for cinematic camera motion
+// =========================================
+if (!Math.easeInOutCubic) {
+  Math.easeInOutCubic = (t) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
 
 export default function CarCanvas() {
   const [seatView, setSeatView] = useState(null);
   const [headLightsOn, setHeadLightsOn] = useState(false);
   const [rearLightsOn, setRearLightsOn] = useState(false);
-  const [speed, setSpeed] = useState(0); // 🔥 SPEED SLIDER
+  const [speed, setSpeed] = useState(100);
 
   const controls = useRef();
   const carRef = useRef();
   const headLightRef = useRef();
   const rearLightRef = useRef();
 
+  const [introPlayed, setIntroPlayed] = useState(false);
+  const [isIntro, setIsIntro] = useState(true);
+
+  // =========================================
+  // EXIT CAR (same as before)
+  // =========================================
   const handleExitCar = () => {
     setSeatView(null);
     if (controls.current) controls.current.reset();
@@ -24,10 +40,85 @@ export default function CarCanvas() {
 
   const interiorIntensity = seatView ? 1.0 : 0;
 
+  // =========================================
+  // 🎬 CINEMATIC INTRO CAMERA
+  // =========================================
+const playIntro = useCallback(() => {
+  const ctrl = controls.current;
+  const cam = ctrl?.object;
+  const car = carRef.current;
+
+  if (!cam || !car) return;
+
+  setIsIntro(true);
+
+  // NEW: Start from behind BUT opposite side
+  const startPos = new THREE.Vector3(
+    car.position.x - 8,
+    car.position.y + 12,
+    car.position.z + 32
+  );
+
+  // NEW: End position also on opposite side
+  const endPos = new THREE.Vector3(
+    car.position.x - 3,
+    car.position.y + 2.5,
+    car.position.z + 7.5
+  );
+
+  cam.position.copy(startPos);
+  cam.lookAt(car.position);
+  ctrl.enabled = false;
+
+  const duration = 2600;
+  let startTime = null;
+
+  function animateIntro(ts) {
+    if (!startTime) startTime = ts;
+    const elapsed = ts - startTime;
+
+    const t = Math.min(elapsed / duration, 1);
+    const ease = Math.easeInOutCubic(t);
+
+    cam.position.lerpVectors(startPos, endPos, ease);
+    cam.lookAt(car.position);
+
+    if (t < 1) {
+      requestAnimationFrame(animateIntro);
+    } else {
+      cam.position.copy(endPos);
+      cam.lookAt(car.position);
+
+      ctrl.target.copy(car.position);
+      ctrl.update();
+      ctrl.enabled = true;
+
+      setIsIntro(false);
+      setIntroPlayed(true);
+    }
+  }
+
+  requestAnimationFrame(animateIntro);
+}, []);
+
+
+  // =========================================
+  // Delay intro until scene is loaded
+  // =========================================
+  function CinematicStartTrigger({ onReady }) {
+    useEffect(() => {
+      setTimeout(() => onReady(), 200);
+    }, []);
+    return null;
+  }
+
+  // =========================================
+  // JSX
+  // =========================================
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
       
-      {/* Exit button */}
+      {/* EXIT BUTTON */}
       {seatView && (
         <button
           onClick={handleExitCar}
@@ -49,7 +140,7 @@ export default function CarCanvas() {
         </button>
       )}
 
-      {/* Headlight toggle */}
+      {/* HEADLIGHT TOGGLE */}
       <button
         onClick={() => setHeadLightsOn((p) => !p)}
         style={{
@@ -69,7 +160,7 @@ export default function CarCanvas() {
         Front: {headLightsOn ? "ON" : "OFF"}
       </button>
 
-      {/* Rear light toggle */}
+      {/* REAR LIGHT TOGGLE */}
       <button
         onClick={() => setRearLightsOn((p) => !p)}
         style={{
@@ -107,7 +198,7 @@ export default function CarCanvas() {
         <input
           type="range"
           min="0"
-          max="20"
+          max="100"
           step="0.1"
           value={speed}
           onChange={(e) => setSpeed(parseFloat(e.target.value))}
@@ -115,27 +206,24 @@ export default function CarCanvas() {
         />
       </div>
 
-      {/* CANVAS */}
+      {/* ===================== */}
+      {/*       CANVAS          */}
+      {/* ===================== */}
+
       <Canvas
         camera={{ position: [3, 1.5, 5], fov: 60 }}
         style={{ width: "100%", height: "100%", background: "#242424" }}
         shadows
       >
-        {/* Ambient Light */}
         <ambientLight intensity={0.3} />
 
-        {/* Sun Light */}
         <directionalLight
           position={[50, 100, 50]}
           intensity={2.2}
           color={"#fff8e6"}
           castShadow
-          shadow-mapSize-width={4096}
-          shadow-mapSize-height={4096}
-          shadow-bias={-0.00015}
         />
 
-        {/* Interior Light */}
         <pointLight
           color={0xffffff}
           intensity={interiorIntensity}
@@ -143,35 +231,30 @@ export default function CarCanvas() {
           position={[0, 1.8, 0]}
         />
 
-        {/* Head Light */}
+        {/* HEADLIGHT */}
         <spotLight
           ref={headLightRef}
           color={0xffffff}
-          intensity={headLightsOn ? 20 : 0}
+          intensity={headLightsOn ? 1000 : 0}
           distance={100}
           angle={Math.PI / 6}
           penumbra={0.2}
-          decay={-1}
           castShadow
         />
 
-        {/* Rear Light */}
+        {/* REAR LIGHT */}
         <spotLight
           ref={rearLightRef}
           color={0xff0000}
-          intensity={rearLightsOn ? 15 : 0}
+          intensity={rearLightsOn ? 100 : 0}
           distance={50}
           angle={Math.PI / 5}
           penumbra={0.2}
-          decay={1}
           castShadow
         />
 
-
-        {/* Ground */}
         <Ground speed={speed} />
 
-        {/* Car Model */}
         <CarModel
           onSeatRequest={setSeatView}
           currentSeat={seatView}
@@ -180,11 +263,12 @@ export default function CarCanvas() {
           carRef={carRef}
           headLightRef={headLightRef}
           rearLightRef={rearLightRef}
-          speed={speed} // 🔥 PASS SPEED
+          speed={speed}
         />
 
-        {/* Orbit Controls */}
-        <OrbitControls ref={controls} enableDamping />
+        {!introPlayed && <CinematicStartTrigger onReady={playIntro} />}
+
+        <OrbitControls ref={controls} enableDamping={!isIntro} />
 
         <CameraRig seat={seatView} controls={controls} />
       </Canvas>
