@@ -1,61 +1,78 @@
-// Ground.js
 import { useFrame, useLoader } from "@react-three/fiber";
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import * as THREE from "three";
 import { TextureLoader } from "three";
 
-export default function Ground({ speed }) {
-  // Load textures
+export default function Ground({ speed, isNight }) {
   const grassMap = useLoader(TextureLoader, "/textures/grass.jpg");
   const roadMap = useLoader(TextureLoader, "/textures/road.jpg");
 
-  const grassMaterial = useRef();
-  const roadMaterial = useRef();
+  const grassMat = useRef();
+  const roadMat = useRef();
 
-  // Make textures repeat
-  grassMap.wrapS = grassMap.wrapT = THREE.RepeatWrapping;
-  roadMap.wrapS = roadMap.wrapT = THREE.RepeatWrapping;
+  useMemo(() => {
+    grassMap.wrapS = grassMap.wrapT = THREE.RepeatWrapping;
+    roadMap.wrapS = roadMap.wrapT = THREE.RepeatWrapping;
+    grassMap.repeat.set(40, 40);
+    roadMap.repeat.set(1, 20);
+  }, [grassMap, roadMap]);
 
-  // Tilings
-  grassMap.repeat.set(40, 40);
-  roadMap.repeat.set(1, 20);
-
-  // Animate textures
-  useFrame((state, delta) => {
+  useFrame((_, delta) => {
     if (speed <= 0) return;
-
-    const grassScroll = speed * 0.1;
-    const roadScroll = speed * 1.0;
-
-    if (grassMaterial.current) {
-      grassMaterial.current.map.offset.y -= delta * grassScroll;
-    }
-    if (roadMaterial.current) {
-      roadMaterial.current.map.offset.y -= delta * roadScroll;
-    }
+    if (grassMat.current) grassMat.current.map.offset.y -= delta * speed * 0.1;
+    if (roadMat.current) roadMat.current.map.offset.y -= delta * speed * 1.0;
   });
 
   return (
     <group>
-      {/* Large Grass Area */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.02, 0]}
-        receiveShadow
-      >
+      {/* Grass */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
         <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial ref={grassMaterial} map={grassMap} />
+        <meshStandardMaterial
+          ref={grassMat}
+          map={grassMap}
+          color={isNight ? "#1a2a1a" : "#ffffff"}
+        />
       </mesh>
 
       {/* Road */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.01, 0]}
-        receiveShadow
-      >
-        <planeGeometry args={[4, 200]} />
-        <meshStandardMaterial ref={roadMaterial} map={roadMap} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+        <planeGeometry args={[8, 200]} />
+        <meshStandardMaterial
+          ref={roadMat}
+          map={roadMap}
+          color={isNight ? "#1a1a2e" : "#ffffff"}
+          roughness={0.9}
+        />
       </mesh>
+
+      {/* Glowing center lane dashes */}
+      {Array.from({ length: 30 }, (_, i) => (
+        <mesh
+          key={i}
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, 0.005, -i * 6 + 60]}
+        >
+          <planeGeometry args={[0.12, 2.5]} />
+          <meshStandardMaterial
+            color={isNight ? "#00dcc8" : "#ffffff"}
+            emissive={isNight ? "#00dcc8" : "#cccccc"}
+            emissiveIntensity={isNight ? 1.2 : 0.3}
+          />
+        </mesh>
+      ))}
+
+      {/* Road edge lines */}
+      {[-3.8, 3.8].map((x) => (
+        <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.005, 0]}>
+          <planeGeometry args={[0.15, 200]} />
+          <meshStandardMaterial
+            color={isNight ? "#ff6600" : "#ffffff"}
+            emissive={isNight ? "#ff4400" : "#aaaaaa"}
+            emissiveIntensity={isNight ? 0.8 : 0.2}
+          />
+        </mesh>
+      ))}
     </group>
   );
 }

@@ -1,6 +1,5 @@
-// CarCanvas.js
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, Sky, Stars } from "@react-three/drei";
 import { useRef, useState, useEffect, useCallback } from "react";
 import * as THREE from "three";
 
@@ -8,9 +7,6 @@ import CameraRig from "./CameraRig";
 import CarModel from "./CarModel";
 import Ground from "./Ground";
 
-// =========================================
-// Easing (Cubic) for cinematic camera motion
-// =========================================
 if (!Math.easeInOutCubic) {
   Math.easeInOutCubic = (t) =>
     t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -20,19 +16,16 @@ export default function CarCanvas() {
   const [seatView, setSeatView] = useState(null);
   const [headLightsOn, setHeadLightsOn] = useState(false);
   const [rearLightsOn, setRearLightsOn] = useState(false);
-  const [speed, setSpeed] = useState(100);
+  const [speed, setSpeed] = useState(0);
+  const [isNight, setIsNight] = useState(false);
+  const [introPlayed, setIntroPlayed] = useState(false);
+  const [isIntro, setIsIntro] = useState(true);
 
   const controls = useRef();
   const carRef = useRef();
   const headLightRef = useRef();
   const rearLightRef = useRef();
 
-  const [introPlayed, setIntroPlayed] = useState(false);
-  const [isIntro, setIsIntro] = useState(true);
-
-  // =========================================
-  // EXIT CAR (same as before)
-  // =========================================
   const handleExitCar = () => {
     setSeatView(null);
     if (controls.current) controls.current.reset();
@@ -40,198 +33,157 @@ export default function CarCanvas() {
 
   const interiorIntensity = seatView ? 1.0 : 0;
 
-  // =========================================
-  // 🎬 CINEMATIC INTRO CAMERA
-  // =========================================
-const playIntro = useCallback(() => {
-  const ctrl = controls.current;
-  const cam = ctrl?.object;
-  const car = carRef.current;
+  const playIntro = useCallback(() => {
+    const ctrl = controls.current;
+    const cam = ctrl?.object;
+    const car = carRef.current;
+    if (!cam || !car) return;
+    setIsIntro(true);
 
-  if (!cam || !car) return;
+    const phase1Start = new THREE.Vector3(car.position.x + 15, car.position.y + 8, car.position.z - 25);
+    const phase1End = new THREE.Vector3(car.position.x - 12, car.position.y + 6, car.position.z + 18);
+    const phase2End = new THREE.Vector3(car.position.x + 8, car.position.y + 3, car.position.z + 12);
+    const finalPos = new THREE.Vector3(car.position.x - 3, car.position.y + 2.5, car.position.z + 7.5);
 
-  setIsIntro(true);
-
-  // NEW: Start from behind BUT opposite side
-  const startPos = new THREE.Vector3(
-    car.position.x - 8,
-    car.position.y + 12,
-    car.position.z + 32
-  );
-
-  // NEW: End position also on opposite side
-  const endPos = new THREE.Vector3(
-    car.position.x - 3,
-    car.position.y + 2.5,
-    car.position.z + 7.5
-  );
-
-  cam.position.copy(startPos);
-  cam.lookAt(car.position);
-  ctrl.enabled = false;
-
-  const duration = 2600;
-  let startTime = null;
-
-  function animateIntro(ts) {
-    if (!startTime) startTime = ts;
-    const elapsed = ts - startTime;
-
-    const t = Math.min(elapsed / duration, 1);
-    const ease = Math.easeInOutCubic(t);
-
-    cam.position.lerpVectors(startPos, endPos, ease);
+    cam.position.copy(phase1Start);
     cam.lookAt(car.position);
+    ctrl.enabled = false;
 
-    if (t < 1) {
-      requestAnimationFrame(animateIntro);
-    } else {
-      cam.position.copy(endPos);
-      cam.lookAt(car.position);
+    const phase1Duration = 2000;
+    const phase2Duration = 1800;
+    const phase3Duration = 1200;
+    const totalDuration = phase1Duration + phase2Duration + phase3Duration;
+    let startTime = null;
 
-      ctrl.target.copy(car.position);
-      ctrl.update();
-      ctrl.enabled = true;
+    function animateIntro(ts) {
+      if (!startTime) startTime = ts;
+      const elapsed = ts - startTime;
+      const t = Math.min(elapsed / totalDuration, 1);
 
-      setIsIntro(false);
-      setIntroPlayed(true);
+      if (elapsed < phase1Duration) {
+        const t1 = elapsed / phase1Duration;
+        const ease1 = Math.easeInOutCubic(t1);
+        cam.position.lerpVectors(phase1Start, phase1End, ease1);
+        const lookTarget = new THREE.Vector3(car.position.x, car.position.y + 1, car.position.z);
+        cam.lookAt(lookTarget);
+      } else if (elapsed < phase1Duration + phase2Duration) {
+        const t2 = (elapsed - phase1Duration) / phase2Duration;
+        const ease2 = Math.easeInOutCubic(t2);
+        cam.position.lerpVectors(phase1End, phase2End, ease2);
+        const lookTarget = new THREE.Vector3(car.position.x - 0.5, car.position.y + 0.8, car.position.z - 1);
+        cam.lookAt(lookTarget);
+      } else {
+        const t3 = (elapsed - phase1Duration - phase2Duration) / phase3Duration;
+        const ease3 = Math.easeInOutCubic(t3);
+        cam.position.lerpVectors(phase2End, finalPos, ease3);
+        cam.lookAt(car.position);
+      }
+
+      if (t < 1) {
+        requestAnimationFrame(animateIntro);
+      } else {
+        cam.position.copy(finalPos);
+        cam.lookAt(car.position);
+        ctrl.target.copy(car.position);
+        ctrl.update();
+        ctrl.enabled = true;
+        setIsIntro(false);
+        setIntroPlayed(true);
+      }
     }
-  }
 
-  requestAnimationFrame(animateIntro);
-}, []);
+    requestAnimationFrame(animateIntro);
+  }, []);
 
-
-  // =========================================
-  // Delay intro until scene is loaded
-  // =========================================
   function CinematicStartTrigger({ onReady }) {
-    useEffect(() => {
-      setTimeout(() => onReady(), 200);
-    }, []);
+    useEffect(() => { setTimeout(() => onReady(), 200); }, []);
     return null;
   }
 
-  // =========================================
-  // JSX
-  // =========================================
+  const speedPct = speed / 100;
+
   return (
     <div style={{ width: "100vw", height: "100vh", position: "relative" }}>
-      
-      {/* EXIT BUTTON */}
-      {seatView && (
+
+      <div className="vignette" />
+      <div className="scanlines" />
+
+      <div className="brand-badge">CYBER<span>TRUCK</span></div>
+
+      <div className="hud-top">
+        {seatView && (
+          <button className="hud-btn active-blue" onClick={handleExitCar}>
+            ← EXIT
+          </button>
+        )}
         <button
-          onClick={handleExitCar}
-          style={{
-            position: "absolute",
-            top: "20px",
-            left: "20px",
-            padding: "10px 18px",
-            background: "#256AFF",
-            color: "white",
-            border: "none",
-            borderRadius: "8px",
-            cursor: "pointer",
-            fontWeight: "600",
-            zIndex: 20,
-          }}
+          className={`hud-btn ${headLightsOn ? "active-yellow" : ""}`}
+          onClick={() => setHeadLightsOn((p) => !p)}
         >
-          Exit Car
+          ◈ FRONT {headLightsOn ? "ON" : "OFF"}
         </button>
-      )}
-
-      {/* HEADLIGHT TOGGLE */}
-      <button
-        onClick={() => setHeadLightsOn((p) => !p)}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "130px",
-          padding: "10px 14px",
-          background: headLightsOn ? "#FFFF00" : "#555",
-          color: headLightsOn ? "black" : "white",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontWeight: "600",
-          zIndex: 20,
-        }}
-      >
-        Front: {headLightsOn ? "ON" : "OFF"}
-      </button>
-
-      {/* REAR LIGHT TOGGLE */}
-      <button
-        onClick={() => setRearLightsOn((p) => !p)}
-        style={{
-          position: "absolute",
-          top: "20px",
-          right: "20px",
-          padding: "10px 14px",
-          background: rearLightsOn ? "#FF0000" : "#555",
-          color: "white",
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontWeight: "600",
-          zIndex: 20,
-        }}
-      >
-        Rear: {rearLightsOn ? "ON" : "OFF"}
-      </button>
-
-      {/* SPEED SLIDER */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: "20px",
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: "320px",
-          zIndex: 20,
-          textAlign: "center",
-          color: "#fff",
-          fontWeight: "600",
-        }}
-      >
-        Speed: {speed.toFixed(1)}
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="0.1"
-          value={speed}
-          onChange={(e) => setSpeed(parseFloat(e.target.value))}
-          style={{ width: "100%", marginTop: "10px" }}
-        />
+        <button
+          className={`hud-btn ${rearLightsOn ? "active-red" : ""}`}
+          onClick={() => setRearLightsOn((p) => !p)}
+        >
+          ◈ REAR {rearLightsOn ? "ON" : "OFF"}
+        </button>
+        <button
+          className={`hud-btn ${isNight ? "active-cyan" : ""}`}
+          onClick={() => setIsNight((p) => !p)}
+        >
+          {isNight ? "☽ NIGHT" : "☀ DAY"}
+        </button>
       </div>
 
-      {/* ===================== */}
-      {/*       CANVAS          */}
-      {/* ===================== */}
+      <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+        <div className="speed-panel">
+          <div className="speed-label">velocity</div>
+          <div className="speed-value">{speed.toFixed(0)}</div>
+          <div className="speed-unit">KM/H</div>
+          <div className="speed-track">
+            <div className="speed-fill" style={{ width: `${speedPct * 100}%` }} />
+          </div>
+          <input
+            type="range" min="0" max="100" step="0.5"
+            value={speed}
+            onChange={(e) => setSpeed(parseFloat(e.target.value))}
+          />
+        </div>
+      </div>
 
       <Canvas
         camera={{ position: [3, 1.5, 5], fov: 60 }}
-        style={{ width: "100%", height: "100%", background: "#242424" }}
+        style={{ width: "100%", height: "100%" }}
         shadows
       >
-        <ambientLight intensity={0.3} />
+        {isNight ? (
+          <>
+            <color attach="background" args={["#020510"]} />
+            <Stars radius={120} depth={60} count={4000} factor={4} fade />
+            <ambientLight intensity={0.15} />
+            <directionalLight position={[-30, 50, -20]} intensity={0.8} color="#b8c5ff" castShadow />
+            <mesh position={[-30, 50, -80]}>
+              <sphereGeometry args={[8, 32, 32]} />
+              <meshStandardMaterial 
+                color="#e8f0ff" 
+                emissive="#c8d8ff" 
+                emissiveIntensity={1.2}
+              />
+            </mesh>
+          </>
+        ) : (
+          <>
+            <Sky sunPosition={[100, 20, 100]} turbidity={6} rayleigh={0.5} />
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[50, 100, 50]} intensity={2.2} color="#fff8e6" castShadow />
+          </>
+        )}
 
-        <directionalLight
-          position={[50, 100, 50]}
-          intensity={2.2}
-          color={"#fff8e6"}
-          castShadow
-        />
+        <fog attach="fog" args={[isNight ? "#020510" : "#c9dff0", 60, 200]} />
 
-        <pointLight
-          color={0xffffff}
-          intensity={interiorIntensity}
-          distance={5}
-          position={[0, 1.8, 0]}
-        />
+        <pointLight color={0xffffff} intensity={interiorIntensity} distance={5} position={[0, 1.8, 0]} />
 
-        {/* HEADLIGHT */}
         <spotLight
           ref={headLightRef}
           color={0xffffff}
@@ -241,8 +193,6 @@ const playIntro = useCallback(() => {
           penumbra={0.2}
           castShadow
         />
-
-        {/* REAR LIGHT */}
         <spotLight
           ref={rearLightRef}
           color={0xff0000}
@@ -253,7 +203,7 @@ const playIntro = useCallback(() => {
           castShadow
         />
 
-        <Ground speed={speed} />
+        <Ground speed={speed} isNight={isNight} />
 
         <CarModel
           onSeatRequest={setSeatView}
@@ -267,9 +217,7 @@ const playIntro = useCallback(() => {
         />
 
         {!introPlayed && <CinematicStartTrigger onReady={playIntro} />}
-
         <OrbitControls ref={controls} enableDamping={!isIntro} />
-
         <CameraRig seat={seatView} controls={controls} />
       </Canvas>
     </div>
