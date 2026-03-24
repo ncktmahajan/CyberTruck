@@ -6,6 +6,10 @@ import * as THREE from "three";
 import CameraRig from "./CameraRig";
 import CarModel from "./CarModel";
 import Ground from "./Ground";
+import VRButton from "./VRButton";
+import VRManager from "./VRManager";
+import VRControllers from "./VRControllers";
+import VREnvironment from "./VREnvironment";
 
 if (!Math.easeInOutCubic) {
   Math.easeInOutCubic = (t) =>
@@ -18,6 +22,8 @@ export default function CarCanvas() {
   const [rearLightsOn, setRearLightsOn] = useState(false);
   const [speed, setSpeed] = useState(0);
   const [isNight, setIsNight] = useState(false);
+  const [vrMode, setVrMode] = useState(false);
+  const [glInstance, setGlInstance] = useState(null);
   const [introPlayed, setIntroPlayed] = useState(false);
   const [isIntro, setIsIntro] = useState(true);
 
@@ -110,6 +116,15 @@ export default function CarCanvas() {
 
       <div className="brand-badge">CYBER<span>TRUCK</span></div>
 
+      {/* VR Button */}
+      <div className="vr-button-container">
+        <VRButton
+          gl={glInstance}
+          onSessionStart={() => setVrMode(true)}
+          onSessionEnd={() => setVrMode(false)}
+        />
+      </div>
+
       <div className="hud-top">
         {seatView && (
           <button className="hud-btn active-blue" onClick={handleExitCar}>
@@ -136,7 +151,7 @@ export default function CarCanvas() {
         </button>
       </div>
 
-      <div style={{ position: "absolute", bottom: 20, left: "50%", transform: "translateX(-50%)", zIndex: 20 }}>
+      <div className="speed-container">
         <div className="speed-panel">
           <div className="speed-label">velocity</div>
           <div className="speed-value">{speed.toFixed(0)}</div>
@@ -156,6 +171,10 @@ export default function CarCanvas() {
         camera={{ position: [3, 1.5, 5], fov: 60 }}
         style={{ width: "100%", height: "100%" }}
         shadows
+        onCreated={({ gl }) => {
+          gl.xr.enabled = true;
+          setGlInstance(gl);
+        }}
       >
         {isNight ? (
           <>
@@ -204,6 +223,9 @@ export default function CarCanvas() {
         />
 
         <Ground speed={speed} isNight={isNight} />
+
+        {/* VR Components */}
+        <VRManager onGLReady={setGlInstance} />
 
         <CarModel
           onSeatRequest={setSeatView}

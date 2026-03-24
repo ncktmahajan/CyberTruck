@@ -19,10 +19,10 @@ body, html, #root {
 /* Glassmorphism card */
 .hud-btn {
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.7rem;
+  font-size: clamp(0.6rem, 2vw, 0.7rem);
   font-weight: 600;
   letter-spacing: 0.08em;
-  padding: 8px 16px;
+  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 3vw, 16px);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 10px;
   background: rgba(255,255,255,0.07);
@@ -83,20 +83,21 @@ body, html, #root {
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px;
-  padding: 14px 24px 18px;
+  padding: clamp(10px, 2vh, 14px) clamp(16px, 4vw, 24px) clamp(12px, 2.5vh, 18px);
   color: #fff;
   text-align: center;
-  min-width: 260px;
+  min-width: clamp(200px, 50vw, 260px);
+  max-width: 90vw;
 }
 .speed-label {
-  font-size: 0.6rem;
+  font-size: clamp(0.5rem, 1.5vw, 0.6rem);
   letter-spacing: 0.2em;
   color: rgba(255,255,255,0.45);
   text-transform: uppercase;
   margin-bottom: 4px;
 }
 .speed-value {
-  font-size: 2.4rem;
+  font-size: clamp(1.8rem, 6vw, 2.4rem);
   font-weight: 800;
   line-height: 1;
   background: linear-gradient(135deg, #00dcc8, #008cff);
@@ -105,7 +106,7 @@ body, html, #root {
   background-clip: text;
 }
 .speed-unit {
-  font-size: 0.6rem;
+  font-size: clamp(0.5rem, 1.5vw, 0.6rem);
   letter-spacing: 0.15em;
   color: rgba(255,255,255,0.35);
   margin-bottom: 10px;
@@ -135,8 +136,8 @@ input[type=range] {
 }
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 16px;
-  height: 16px;
+  width: clamp(14px, 3vw, 16px);
+  height: clamp(14px, 3vw, 16px);
   border-radius: 50%;
   background: #008cff;
   box-shadow: 0 0 8px rgba(0,140,255,0.8);
@@ -150,22 +151,26 @@ input[type=range]::-webkit-slider-thumb:hover {
 /* Top HUD bar */
 .hud-top {
   position: absolute;
-  top: 16px;
+  top: clamp(12px, 2vh, 16px);
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
+  gap: clamp(6px, 1.5vw, 10px);
   align-items: center;
   z-index: 20;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 95vw;
+  padding: 0 10px;
 }
 
 /* Corner badge */
 .brand-badge {
   position: absolute;
-  top: 16px;
-  left: 20px;
+  top: clamp(12px, 2vh, 16px);
+  left: clamp(12px, 3vw, 20px);
   font-family: 'Orbitron', sans-serif;
-  font-size: 0.75rem;
+  font-size: clamp(0.6rem, 2vw, 0.75rem);
   font-weight: 800;
   letter-spacing: 0.2em;
   color: rgba(255,255,255,0.7);
@@ -175,6 +180,27 @@ input[type=range]::-webkit-slider-thumb:hover {
 }
 .brand-badge span {
   color: #00dcc8;
+}
+
+/* VR Button container */
+.vr-button-container {
+  position: absolute;
+  top: clamp(12px, 2vh, 16px);
+  right: clamp(12px, 3vw, 20px);
+  z-index: 20;
+}
+
+/* Speed panel container */
+.speed-container {
+  position: absolute;
+  bottom: clamp(12px, 2vh, 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 0 10px;
 }
 
 /* Scanline overlay */
@@ -199,4 +225,80 @@ input[type=range]::-webkit-slider-thumb:hover {
   pointer-events: none;
   z-index: 9;
   background: radial-gradient(ellipse at center, transparent 55%, rgba(0,5,15,0.7) 100%);
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .hud-top {
+    top: 8px;
+    gap: 6px;
+  }
+  
+  .brand-badge {
+    font-size: 0.55rem;
+    top: 8px;
+    left: 8px;
+  }
+  
+  .vr-button-container {
+    top: 8px;
+    right: 8px;
+  }
+  
+  .speed-container {
+    bottom: 8px;
+  }
+  
+  .speed-panel {
+    min-width: 180px;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .hud-top {
+    flex-direction: column;
+    gap: 4px;
+    top: 50px;
+  }
+  
+  .hud-btn {
+    font-size: 0.55rem;
+    padding: 5px 10px;
+  }
+  
+  .speed-value {
+    font-size: 1.6rem;
+  }
+}
+
+/* Landscape mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+  .hud-top {
+    top: 6px;
+    gap: 4px;
+  }
+  
+  .brand-badge {
+    top: 6px;
+    left: 6px;
+    font-size: 0.5rem;
+  }
+  
+  .vr-button-container {
+    top: 6px;
+    right: 6px;
+  }
+  
+  .speed-container {
+    bottom: 6px;
+  }
+  
+  .speed-panel {
+    padding: 8px 16px 10px;
+  }
+  
+  .speed-value {
+    font-size: 1.4rem;
+  }
 }
