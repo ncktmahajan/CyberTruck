@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
 import * as THREE from "three";
 
 export default function VRCarInteraction({ 
@@ -112,19 +111,6 @@ export default function VRCarInteraction({
             />
           </mesh>
           
-          {/* Label */}
-          <Text
-            position={[0, 0.25, 0]}
-            fontSize={0.08}
-            color="#00dcc8"
-            anchorX="center"
-            anchorY="middle"
-            outlineWidth={0.01}
-            outlineColor="#000000"
-          >
-            {data.label}
-          </Text>
-          
           {/* Pulsing ring */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.1, 0]}>
             <ringGeometry args={[0.18, 0.22, 32]} />
@@ -149,15 +135,10 @@ export default function VRCarInteraction({
           </mesh>
 
           {/* Title */}
-          <Text
-            position={[0, 0.25, 0]}
-            fontSize={0.05}
-            color="#00dcc8"
-            anchorX="center"
-            anchorY="middle"
-          >
-            SEAT SELECTION
-          </Text>
+          <mesh position={[0, 0.25, 0]}>
+            <planeGeometry args={[0.8, 0.08]} />
+            <meshBasicMaterial color="#00dcc8" transparent opacity={0.8} />
+          </mesh>
 
           {/* Exit button */}
           <mesh 
@@ -176,15 +157,6 @@ export default function VRCarInteraction({
               emissiveIntensity={0.5}
             />
           </mesh>
-          <Text
-            position={[0, 0.1, 0.02]}
-            fontSize={0.045}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-          >
-            EXIT CAR
-          </Text>
 
           {/* Seat buttons */}
           {Object.entries(seatPositions).map(([seatKey, data], idx) => {
@@ -212,29 +184,15 @@ export default function VRCarInteraction({
                     emissiveIntensity={isCurrentSeat ? 0.8 : 0.3}
                   />
                 </mesh>
-                <Text
-                  position={[x, y, 0.02]}
-                  fontSize={0.03}
-                  color="#ffffff"
-                  anchorX="center"
-                  anchorY="middle"
-                >
-                  {data.label.split(' ')[0]}
-                </Text>
               </group>
             );
           })}
 
           {/* Instructions */}
-          <Text
-            position={[0, -0.32, 0]}
-            fontSize={0.025}
-            color="#888888"
-            anchorX="center"
-            anchorY="middle"
-          >
-            Point & Click to Switch
-          </Text>
+          <mesh position={[0, -0.32, 0]}>
+            <planeGeometry args={[0.6, 0.04]} />
+            <meshBasicMaterial color="#888888" transparent opacity={0.5} />
+          </mesh>
         </group>
       )}
     </>

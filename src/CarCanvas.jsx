@@ -170,13 +170,11 @@ export default function CarCanvas() {
       </div>
 
       <Canvas
-        camera={{ position: [3, 1.5, 5], fov: 60 }}
+        camera={{ position: [0, 1.6, 5], fov: 60 }}
         style={{ width: "100%", height: "100%" }}
         shadows
-        onCreated={({ gl, camera }) => {
+        onCreated={({ gl }) => {
           gl.xr.enabled = true;
-          // Set VR camera starting position in front of car
-          camera.position.set(0, 1.6, 5);
           setGlInstance(gl);
         }}
       >
@@ -230,28 +228,6 @@ export default function CarCanvas() {
 
         {/* VR Components */}
         <VRManager onGLReady={setGlInstance} />
-        {vrMode && (
-          <>
-            <VRTeleport />
-            <VRControllerRays />
-            <VRUIPanel 
-              headLightsOn={headLightsOn}
-              setHeadLightsOn={setHeadLightsOn}
-              rearLightsOn={rearLightsOn}
-              setRearLightsOn={setRearLightsOn}
-              isNight={isNight}
-              setIsNight={setIsNight}
-              speed={speed}
-              setSpeed={setSpeed}
-            />
-            <VRCarInteraction
-              carRef={carRef}
-              currentSeat={seatView}
-              onSeatRequest={setSeatView}
-              onExitCar={handleExitCar}
-            />
-          </>
-        )}
 
         <CarModel
           onSeatRequest={setSeatView}

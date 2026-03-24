@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 import { useThree, useFrame } from "@react-three/fiber";
-import { Text } from "@react-three/drei";
 import * as THREE from "three";
 
 export default function VRUIPanel({ 
@@ -101,16 +100,10 @@ export default function VRUIPanel({
       </mesh>
 
       {/* Title */}
-      <Text
-        position={[0, 0.35, 0]}
-        fontSize={0.06}
-        color="#00dcc8"
-        anchorX="center"
-        anchorY="middle"
-        font="/fonts/orbitron-bold.woff"
-      >
-        CYBER TRUCK CONTROLS
-      </Text>
+      <mesh position={[0, 0.35, 0]}>
+        <planeGeometry args={[0.8, 0.08]} />
+        <meshBasicMaterial color="#00dcc8" transparent opacity={0.8} />
+      </mesh>
 
       {/* Headlights Button */}
       <mesh 
@@ -129,15 +122,6 @@ export default function VRUIPanel({
           emissiveIntensity={headLightsOn ? 0.8 : 0.3}
         />
       </mesh>
-      <Text
-        position={[-0.35, 0.15, 0.02]}
-        fontSize={0.04}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        FRONT {headLightsOn ? "ON" : "OFF"}
-      </Text>
 
       {/* Rear Lights Button */}
       <mesh 
@@ -156,15 +140,6 @@ export default function VRUIPanel({
           emissiveIntensity={rearLightsOn ? 0.8 : 0.3}
         />
       </mesh>
-      <Text
-        position={[0.35, 0.15, 0.02]}
-        fontSize={0.04}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        REAR {rearLightsOn ? "ON" : "OFF"}
-      </Text>
 
       {/* Day/Night Button */}
       <mesh 
@@ -183,35 +158,12 @@ export default function VRUIPanel({
           emissiveIntensity={0.5}
         />
       </mesh>
-      <Text
-        position={[0, -0.05, 0.02]}
-        fontSize={0.04}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {isNight ? "☽ NIGHT" : "☀ DAY"}
-      </Text>
 
       {/* Speed Display */}
-      <Text
-        position={[0, -0.22, 0]}
-        fontSize={0.035}
-        color="#00dcc8"
-        anchorX="center"
-        anchorY="middle"
-      >
-        SPEED
-      </Text>
-      <Text
-        position={[0, -0.28, 0]}
-        fontSize={0.08}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        {speed.toFixed(0)} KM/H
-      </Text>
+      <mesh position={[0, -0.25, 0]}>
+        <planeGeometry args={[0.4, 0.15]} />
+        <meshBasicMaterial color="#00dcc8" transparent opacity={0.3} />
+      </mesh>
 
       {/* Speed - Button */}
       <mesh 
@@ -230,15 +182,6 @@ export default function VRUIPanel({
           emissiveIntensity={0.3}
         />
       </mesh>
-      <Text
-        position={[-0.25, -0.38, 0.02]}
-        fontSize={0.06}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        -
-      </Text>
 
       {/* Speed + Button */}
       <mesh 
@@ -257,26 +200,12 @@ export default function VRUIPanel({
           emissiveIntensity={0.3}
         />
       </mesh>
-      <Text
-        position={[0.25, -0.38, 0.02]}
-        fontSize={0.06}
-        color="#ffffff"
-        anchorX="center"
-        anchorY="middle"
-      >
-        +
-      </Text>
 
-      {/* Instructions */}
-      <Text
-        position={[0, -0.52, 0]}
-        fontSize={0.025}
-        color="#888888"
-        anchorX="center"
-        anchorY="middle"
-      >
-        Point & Click to Interact
-      </Text>
+      {/* Instructions - simplified */}
+      <mesh position={[0, -0.52, 0]}>
+        <planeGeometry args={[0.6, 0.04]} />
+        <meshBasicMaterial color="#888888" transparent opacity={0.5} />
+      </mesh>
     </group>
   );
 }
