@@ -8,10 +8,9 @@ import CarModel from "./CarModel";
 import Ground from "./Ground";
 import VRButton from "./VRButton";
 import VRManager from "./VRManager";
-import VRTeleport from "./VRTeleport";
 import VRControllerRays from "./VRControllerRays";
-import VRUIPanel from "./VRUIPanel";
-import VRCarInteraction from "./VRCarInteraction";
+import VRSimpleUI from "./VRSimpleUI";
+import VRSeatHotspots from "./VRSeatHotspots";
 
 if (!Math.easeInOutCubic) {
   Math.easeInOutCubic = (t) =>
@@ -170,11 +169,14 @@ export default function CarCanvas() {
       </div>
 
       <Canvas
-        camera={{ position: [0, 1.6, 5], fov: 60 }}
+        camera={{ position: [0, 1.6, 5], fov: 75 }}
         style={{ width: "100%", height: "100%" }}
         shadows
-        onCreated={({ gl }) => {
+        gl={{ localClippingEnabled: true }}
+        onCreated={({ gl, camera }) => {
           gl.xr.enabled = true;
+          gl.xr.setReferenceSpaceType('local-floor');
+          camera.position.set(0, 1.6, 5);
           setGlInstance(gl);
         }}
       >
@@ -228,6 +230,28 @@ export default function CarCanvas() {
 
         {/* VR Components */}
         <VRManager onGLReady={setGlInstance} />
+        {vrMode && (
+          <>
+            <VRControllerRays />
+            <VRSimpleUI
+              headLightsOn={headLightsOn}
+              setHeadLightsOn={setHeadLightsOn}
+              rearLightsOn={rearLightsOn}
+              setRearLightsOn={setRearLightsOn}
+              isNight={isNight}
+              setIsNight={setIsNight}
+              speed={speed}
+              setSpeed={setSpeed}
+              currentSeat={seatView}
+              onSeatRequest={setSeatView}
+              onExitCar={handleExitCar}
+            />
+            <VRSeatHotspots
+              currentSeat={seatView}
+              onSeatRequest={setSeatView}
+            />
+          </>
+        )}
 
         <CarModel
           onSeatRequest={setSeatView}
