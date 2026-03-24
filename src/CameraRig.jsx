@@ -84,11 +84,25 @@ export default function CameraRig({ seat, controls }) {
   useFrame(() => {
     if (!controls.current) return;
 
+    // Check if in VR mode
+    const session = gl.xr?.getSession();
+    const inVR = !!session;
+
     if (!seat) {
-      controls.current.enabled = true;
+      if (!inVR) {
+        controls.current.enabled = true;
+      }
       return;
     }
 
+    // In VR, smoothly move camera to seat position
+    if (inVR) {
+      const target = seatPositions[seat];
+      camera.position.lerp(target, 0.08);
+      return;
+    }
+
+    // Desktop mode seat view
     controls.current.enabled = false;
 
     const target = seatPositions[seat];
